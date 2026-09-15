@@ -31,6 +31,13 @@ services:
       ConnectionStrings__DefaultConnection: >
         Server=db;Database=TodoDb;User Id=sa;Password=Todo@Password123;
         TrustServerCertificate=True;MultipleActiveResultSets=true
+      Jwt__Issuer: TodoApi
+      Jwt__Audience: TodoApi
+      Jwt__Key: "BVhgQVHqqewASNkwKaXxHEewWWHn0LHxS2KrCL+vi0lCC9ksOGfv4sGG4BFuGkxg"
+      # Google Cloud Console OAuth client ID (Web application type). Leave blank to disable.
+      Google__ClientId: ""
+      # Apple Developer "Sign in with Apple" Services ID. Leave blank to disable.
+      Apple__ClientId: ""
     depends_on:
       db:
         condition: service_healthy

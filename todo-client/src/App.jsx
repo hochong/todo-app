@@ -4,13 +4,22 @@ import AddForm from './components/AddForm'
 import Calendar from './components/Calendar'
 import Modal from './components/Modal'
 import Toast from './components/Toast'
-import * as api from './services/api'
+import AuthScreen from './components/AuthScreen'
+import * as todosService from './services/todos'
+import * as auth from './services/auth'
 
 export default function App() {
+  const [session, setSession] = useState(() => auth.getSession())
   const [todos, setTodos] = useState([])
   const [loading, setLoading] = useState(true)
   const [toast, setToast] = useState({ show: false, message: '' })
   const [modal, setModal] = useState({ show: false, date: null })
+
+  useEffect(() => {
+    const onExpired = () => setSession(null)
+    window.addEventListener('todo:auth-expired', onExpired)
+    return () => window.removeEventListener('todo:auth-expired', onExpired)
+  }, [])
 
   const showToast = (message) => {
     setToast({ show: true, message })
@@ -19,7 +28,7 @@ export default function App() {
 
   const loadTodos = useCallback(async () => {
     try {
-      const data = await api.fetchTodos()
+      const data = await todosService.fetchTodos()
       setTodos(data)
     } catch {
       showToast('Could not connect to server')
@@ -28,11 +37,23 @@ export default function App() {
     }
   }, [])
 
-  useEffect(() => { loadTodos() }, [loadTodos])
+  useEffect(() => {
+    if (session) loadTodos()
+  }, [session, loadTodos])
+
+  function handleLogout() {
+    auth.logout()
+    setTodos([])
+    setSession(null)
+  }
+
+  if (!session) {
+    return <AuthScreen onAuthed={setSession} />
+  }
 
   const addTodo = async (todo) => {
     try {
-      const created = await api.createTodo(todo)
+      const created = await todosService.createTodo(todo)
       setTodos(prev => [...prev, created])
       showToast('Task added!')
       return true
@@ -44,7 +65,7 @@ export default function App() {
 
   const updateTodo = async (id, todo) => {
     try {
-      const updated = await api.updateTodo(id, todo)
+      const updated = await todosService.updateTodo(id, todo)
       setTodos(prev => prev.map(t => t.id === id ? updated : t))
       showToast('Task updated')
       return true
@@ -56,7 +77,7 @@ export default function App() {
 
   const deleteTodo = async (id) => {
     try {
-      await api.deleteTodo(id)
+      await todosService.deleteTodo(id)
       setTodos(prev => prev.filter(t => t.id !== id))
       showToast('Task deleted')
     } catch {
@@ -71,6 +92,10 @@ export default function App() {
         <span className="task-count">
           {todos.length} task{todos.length !== 1 ? 's' : ''}
         </span>
+        <span className="header-spacer" />
+        {session.mode === 'guest' && <span className="guest-badge">Guest &middot; on this device only</span>}
+        <span className="user-email">{session.email}</span>
+        <button className="btn-logout" onClick={handleLogout}>Log out</button>
       </header>
 
       <div className="main">

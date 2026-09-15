@@ -1,3 +1,5 @@
+using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TodoApi.Data;
@@ -5,6 +7,7 @@ using TodoApi.Models;
 
 namespace TodoApi.Controllers;
 
+[Authorize]
 [ApiController]
 [Route("api/[controller]")]
 public class TodosController : ControllerBase
@@ -13,11 +16,14 @@ public class TodosController : ControllerBase
 
     public TodosController(AppDbContext db) => _db = db;
 
+    private string UserId => User.FindFirstValue(ClaimTypes.NameIdentifier)!;
+
     // GET /api/todos
     [HttpGet]
     public async Task<IActionResult> GetAll()
     {
         var todos = await _db.Todos
+            .Where(t => t.UserId == UserId)
             .OrderBy(t => t.CreatedAt)
             .ToListAsync();
         return Ok(todos);
@@ -30,6 +36,7 @@ public class TodosController : ControllerBase
         if (!ModelState.IsValid) return BadRequest(ModelState);
 
         item.Id = Guid.NewGuid().ToString();
+        item.UserId = UserId;
         item.CreatedAt = DateTime.UtcNow;
 
         _db.Todos.Add(item);
@@ -42,7 +49,7 @@ public class TodosController : ControllerBase
     [HttpPut("{id}")]
     public async Task<IActionResult> Update(string id, [FromBody] TodoItem item)
     {
-        var existing = await _db.Todos.FindAsync(id);
+        var existing = await _db.Todos.FirstOrDefaultAsync(t => t.Id == id && t.UserId == UserId);
         if (existing == null) return NotFound();
 
         existing.Title = item.Title;
@@ -58,7 +65,7 @@ public class TodosController : ControllerBase
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(string id)
     {
-        var existing = await _db.Todos.FindAsync(id);
+        var existing = await _db.Todos.FirstOrDefaultAsync(t => t.Id == id && t.UserId == UserId);
         if (existing == null) return NotFound();
 
         _db.Todos.Remove(existing);

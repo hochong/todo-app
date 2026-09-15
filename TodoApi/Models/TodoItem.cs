@@ -20,4 +20,6 @@ public class TodoItem
     public bool Done { get; set; } = false;
 
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public string UserId { get; set; } = string.Empty;
 }

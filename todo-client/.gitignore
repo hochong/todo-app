@@ -27,3 +27,11 @@ pnpm-debug.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Capacitor native build output (keep android/ and ios/ project files themselves)
+android/app/build/
+android/.gradle/
+android/local.properties
+ios/App/Pods/
+ios/App/build/
+ios/App/DerivedData/
